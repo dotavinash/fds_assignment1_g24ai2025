@@ -1,0 +1,48 @@
+services:
+  charge_request_service:
+    build: ./charge_request_service
+    ports:
+      - "7000:7000"
+    depends_on:
+      - load_balancer
+
+  load_balancer:
+    build: ./load_balancer
+    ports:
+      - "6000:6000"
+    depends_on:
+      - substation1
+      - substation2
+
+  substation1:
+    build: ./substation_service
+    ports:
+      - "5001:5000"
+      - "8001:8001"
+
+  substation2:
+    build: ./substation_service
+    ports:
+      - "5002:5000"
+      - "8002:8001"
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - ./monitoring/grafana:/var/lib/grafana
+    ports:
+      - "3000:3000"
+
+  load_tester:
+    build:
+      context: ./load_tester
+    depends_on:
+      - charge_request_service
+    command: ["python3", "test.py"]
